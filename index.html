@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI & Tech Magazine - Digital Edition</title>
+    <style>
+        :root{
+            --base-color: #f7d05c;
+            --absolute-white: #ffffff;
+            --absolute-black: #000000;
+            --secondary-color: #d3d3d3;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+            transition: background 0.5s ease;
+        }
+        
+        body.fullscreen {
+            background: #000;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            color: #f7d05c;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: 2.5rem;
+            transition: opacity 0.3s ease;
+        }
+        
+        body.fullscreen h1 {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .flipbook-container {
+            position: relative;
+            width: 100%;
+            margin: 0 auto;
+            perspective: 2000px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f7d05c;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: grab;
+            aspect-ratio: 16/9;
+        }
+        
+        .flipbook-container.zoomed {
+            cursor: grabbing;
+            transform: scale(1.5);
+        }
+
+        .flipbook {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            /* padding: 20px;s */
+            backface-visibility: hidden;
+            border: 1px solid #333;
+            overflow: hidden;
+            transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+            transform-origin: left center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Efek bayangan halaman yang lebih realistis */
+        .page::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 10%);
+            opacity: 0;
+            transition: opacity 0.6s;
+            pointer-events: none;
+        }
+
+        .page.flipping {
+            transform: rotateY(-180deg);
+        }
+        
+        .page.flipping::after {
+            opacity: 1;
+        }
+
+        .page-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .page-svg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .page-number {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 0.9rem;
+            color: #333;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* Tombol Navigasi dengan Ikon */
+        .nav-btn {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #f7d05c;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+
+        #prevBtn {
+            top: 20px;
+            left: 20px;
+            display: none; /* Awalnya disembunyikan */
+        }
+
+        #nextBtn {
+            top: 20px;
+            right: 20px;
+        }
+
+        /* Tombol Zoom */
+        .zoom-btn {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #f7d05c;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+
+        #zoomInBtn {
+            bottom: 20px;
+            right: 70px;
+        }
+
+        #zoomOutBtn {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: #333;
+            color: #f7d05c;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button:hover {
+            background: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Style untuk Indikator Halaman */
+        .page-indicators {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .indicator:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .indicator.active {
+            background-color: #000;
+            transform: scale(1.2);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            border-radius: 8px;
+            transition: opacity 0.3s ease;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f7d05c;
+            border-top: 5px solid #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Aksesibilitas: Fokus untuk tombol */
+        button:focus-visible {
+            outline: 2px solid #f7d05c;
+            outline-offset: 2px;
+        }
+        
+        /* Orientation Lock Screen */
+        .orientation-lock {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .orientation-lock.active {
+            display: flex;
+        }
+        
+        .orientation-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: rotate 2s infinite ease-in-out;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
+        }
+        
+        .orientation-message {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .orientation-submessage {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        /* Media query untuk deteksi orientasi */
+        @media screen and (max-width: 767px) and (orientation: portrait) {
+            .orientation-lock {
+                display: flex;
+            }
+        }
+        
+        @media screen and (max-width: 767px) and (orientation: landscape) {
+            .orientation-lock {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="orientation-lock" id="orientation-lock">
+        <div class="orientation-icon">📱</div>
+        <div class="orientation-message">Harap Putar Perangkat Anda</div>
+        <div class="orientation-submessage">Majalah ini dirancang untuk mode lanskap</div>
+    </div>
+
+    <div class="container">
+        <div class="flipbook-container" id="flipbook-container" role="region" aria-label="Area Baca Majalah Digital">
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loading-overlay">
+                <div class="spinner"></div>
+            </div>
+
+            <!-- Tombol Navigasi -->
+            <button id="prevBtn" class="nav-btn" aria-label="Halaman Sebelumnya">
+                <span>&larr;</span>
+            </button>
+            <button id="nextBtn" class="nav-btn" aria-label="Halaman Berikutnya">
+                <span>&rarr;</span>
+            </button>
+            
+            <!-- Tombol Zoom -->
+            <button id="zoomInBtn" class="zoom-btn" aria-label="Zoom In">
+                <span>+</span>
+            </button>
+            <button id="zoomOutBtn" class="zoom-btn" aria-label="Zoom Out">
+                <span>-</span>
+            </button>
+
+            <div class="flipbook" id="flipbook">
+                <!-- Halaman 1 -->
+                <div class="page" id="page1" role="article" aria-label="Halaman 1">
+                    <div class="page-content">
+                        <img src="1.svg" alt="Halaman 1" class="page-svg">
+                    </div>
+                    <div class="page-number">1</div>
+                </div>
+                
+                <!-- Halaman 2 -->
+                <div class="page" id="page2" role="article" aria-label="Halaman 2">
+                    <div class="page-content">
+                        <img src="2.svg" alt="Halaman 2" class="page-svg">
+                    </div>
+                    <div class="page-number">2</div>
+                </div>
+                
+                <!-- Halaman 3 -->
+                <div class="page" id="page3" role="article" aria-label="Halaman 3">
+                    <div class="page-content">
+                        <img src="3.svg" alt="Halaman 3" class="page-svg">
+                    </div>
+                    <div class="page-number">3</div>
+                </div>
+                
+                <!-- Halaman 4 -->
+                <div class="page" id="page4" role="article" aria-label="Halaman 4">
+                    <div class="page-content">
+                        <img src="4.svg" alt="Halaman 4" class="page-svg">
+                    </div>
+                    <div class="page-number">4</div>
+                </div>
+                
+                <!-- Halaman 5 -->
+                <div class="page" id="page5" role="article" aria-label="Halaman 5">
+                    <div class="page-content">
+                        <img src="5.svg" alt="Halaman 5" class="page-svg">
+                    </div>
+                    <div class="page-number">5</div>
+                </div>
+                
+                <!-- Halaman 6 -->
+                <div class="page" id="page6" role="article" aria-label="Halaman 6">
+                    <div class="page-content">
+                        <img src="6.svg" alt="Halaman 6" class="page-svg">
+                    </div>
+                    <div class="page-number">6</div>
+                </div>
+                
+                <!-- Halaman 7 -->
+                <div class="page" id="page7" role="article" aria-label="Halaman 7">
+                    <div class="page-content">
+                        <img src="7.svg" alt="Halaman 7" class="page-svg">
+                    </div>
+                    <div class="page-number">7</div>
+                </div>
+                
+                <!-- Halaman 8 -->
+                <div class="page" id="page8" role="article" aria-label="Halaman 8">
+                    <div class="page-content">
+                        <img src="8.svg" alt="Halaman 8" class="page-svg">
+                    </div>
+                    <div class="page-number">8</div>
+                </div>
+                
+                <!-- Halaman 9 -->
+                <div class="page" id="page9" role="article" aria-label="Halaman 9">
+                    <div class="page-content">
+                        <img src="9.svg" alt="Halaman 9" class="page-svg">
+                    </div>
+                    <div class="page-number">9</div>
+                </div>
+                
+                <!-- Halaman 10 -->
+                <div class="page" id="page10" role="article" aria-label="Halaman 10">
+                    <div class="page-content">
+                        <img src="10.svg" alt="Halaman 10" class="page-svg">
+                    </div>
+                    <div class="page-number">10</div>
+                </div>
+                
+                <!-- Halaman 11 -->
+                <div class="page" id="page11" role="article" aria-label="Halaman 11">
+                    <div class="page-content">
+                        <img src="11.svg" alt="Halaman 11" class="page-svg">
+                    </div>
+                    <div class="page-number">11</div>
+                </div>
+                
+                <!-- Halaman 12 -->
+                <div class="page" id="page12" role="article" aria-label="Halaman 12">
+                    <div class="page-content">
+                        <img src="12.svg" alt="Halaman 12" class="page-svg">
+                    </div>
+                    <div class="page-number">12</div>
+                </div>
+                
+                <!-- Halaman 13 -->
+                <div class="page" id="page13" role="article" aria-label="Halaman 13">
+                    <div class="page-content">
+                        <img src="13.svg" alt="Halaman 13" class="page-svg">
+                    </div>
+                    <div class="page-number">13</div>
+                </div>
+                <!-- Halaman 14 -->
+                <div class="page" id="page14" role="article" aria-label="Halaman 14">
+                    <div class="page-content">
+                        <img src="14.svg" alt="Halaman 14" class="page-svg">
+                    </div>
+                    <div class="page-number">14</div>
+                </div>
+                <!-- Halaman 15 -->
+                <div class="page" id="page15" role="article" aria-label="Halaman 15">
+                    <div class="page-content">
+                        <img src="15.svg" alt="Halaman 15" class="page-svg">
+                    </div>
+                    <div class="page-number">15</div>
+                </div>
+                <!-- Halaman 16 -->
+                <div class="page" id="page16" role="article" aria-label="Halaman 16">
+                    <div class="page-content">
+                        <img src="16.svg" alt="Halaman 16" class="page-svg">
+                    </div>
+                    <div class="page-number">16</div>
+                </div>
+                
+                <!-- Halaman 17 -->
+                <div class="page" id="page17" role="article" aria-label="Halaman 17">
+                    <div class="page-content">
+                        <img src="17.svg" alt="Halaman 17" class="page-svg">
+                    </div>
+                    <div class="page-number">17</div>
+                </div>
+                
+                <!-- Halaman 18 -->
+                <div class="page" id="page18" role="article" aria-label="Halaman 18">
+                    <div class="page-content">
+                        <img src="18.svg" alt="Halaman 18" class="page-svg">
+                    </div>
+                    <div class="page-number">18</div>
+                </div>
+                
+                <!-- Halaman 19 -->
+                <div class="page" id="page19" role="article" aria-label="Halaman 19">
+                    <div class="page-content">
+                        <img src="19.svg" alt="Halaman 19" class="page-svg">
+                    </div>
+                    <div class="page-number">19</div>
+                </div>
+                
+                <!-- Halaman 20 -->
+                <div class="page" id="page20" role="article" aria-label="Halaman 20">
+                    <div class="page-content">
+                        <img src="20.svg" alt="Halaman 20" class="page-svg">
+                    </div>
+                    <div class="page-number">20</div>
+                </div>
+                
+                <!-- Halaman 21 -->
+                <div class="page" id="page21" role="article" aria-label="Halaman 21">
+                    <div class="page-content">
+                        <img src="21.svg" alt="Halaman 21" class="page-svg">
+                    </div>
+                    <div class="page-number">21</div>
+                </div>
+                
+                <!-- Halaman 22 -->
+                <div class="page" id="page22" role="article" aria-label="Halaman 22">
+                    <div class="page-content">
+                        <img src="22.svg" alt="Halaman 22" class="page-svg">
+                    </div>
+                    <div class="page-number">22</div>
+                </div>
+                
+                <!-- Halaman 23-->
+                <div class="page" id="page23" role="article" aria-label="Halaman 23">
+                    <div class="page-content">
+                        <img src="23.svg" alt="Halaman 23" class="page-svg">
+                    </div>
+                    <div class="page-number">23</div>
+                </div>
+                
+                <!-- Halaman 24 -->
+                <div class="page" id="page24" role="article" aria-label="Halaman 24">
+                    <div class="page-content">
+                        <img src="24.svg" alt="Halaman 24" class="page-svg">
+                    </div>
+                    <div class="page-number">24</div>
+                </div>
+                
+                <!-- Halaman 25 -->
+                <div class="page" id="page25" role="article" aria-label="Halaman 25">
+                    <div class="page-content">
+                        <img src="25.svg" alt="Halaman 25" class="page-svg">
+                    </div>
+                    <div class="page-number">25</div>
+                </div>
+                
+                <!-- Halaman 26 -->
+                <div class="page" id="page26" role="article" aria-label="Halaman 26">
+                    <div class="page-content">
+                        <img src="26.svg" alt="Halaman 26" class="page-svg">
+                    </div>
+                    <div class="page-number">26</div>
+                </div>
+                
+                <!-- Halaman 27 -->
+                <div class="page" id="page27" role="article" aria-label="Halaman 27">
+                    <div class="page-content">
+                        <img src="27.svg" alt="Halaman 27" class="page-svg">
+                    </div>
+                    <div class="page-number">27</div>
+                </div>
+                
+                <!-- Halaman 28 -->
+                <div class="page" id="page28" role="article" aria-label="Halaman 28">
+                    <div class="page-content">
+                        <img src="28.svg" alt="Halaman 28" class="page-svg">
+                    </div>
+                    <div class="page-number">28</div>
+                </div>
+                <!-- Halaman 29 -->
+                <div class="page" id="page29" role="article" aria-label="Halaman 29">
+                    <div class="page-content">
+                        <img src="29.svg" alt="Halaman 29" class="page-svg">
+                    </div>
+                    <div class="page-number">29</div>
+                </div>
+                <!-- Halaman 30 -->
+                <div class="page" id="page30" role="article" aria-label="Halaman 30">
+                    <div class="page-content">
+                        <img src="30.svg" alt="Halaman 30" class="page-svg">
+                    </div>
+                    <div class="page-number">30</div>
+                </div>
+                <!-- Halaman 31 -->
+                <div class="page" id="page31" role="article" aria-label="Halaman 31">
+                    <div class="page-content">
+                        <img src="31.svg" alt="Halaman 31" class="page-svg">
+                    </div>
+                    <div class="page-number">31</div>
+                </div>
+                
+                <!-- Halaman 32 -->
+                <div class="page" id="page32" role="article" aria-label="Halaman 32">
+                    <div class="page-content">
+                        <img src="32.svg" alt="Halaman 32" class="page-svg">
+                    </div>
+                    <div class="page-number">32</div>
+                </div>
+                
+                <!-- Halaman 33 -->
+                <div class="page" id="page33" role="article" aria-label="Halaman 33">
+                    <div class="page-content">
+                        <img src="33.svg" alt="Halaman 33" class="page-svg">
+                    </div>
+                    <div class="page-number">33</div>
+                </div>
+                
+                <!-- Halaman 34 -->
+                <div class="page" id="page34" role="article" aria-label="Halaman 34">
+                    <div class="page-content">
+                        <img src="34.svg" alt="Halaman 34" class="page-svg">
+                    </div>
+                    <div class="page-number">34</div>
+                </div>
+                
+                <!-- Halaman 35 -->
+                <div class="page" id="page35" role="article" aria-label="Halaman 35">
+                    <div class="page-content">
+                        <img src="35.svg" alt="Halaman 35" class="page-svg">
+                    </div>
+                    <div class="page-number">35</div>
+                </div>
+                
+                <!-- Halaman 36 -->
+                <div class="page" id="page36" role="article" aria-label="Halaman 36">
+                    <div class="page-content">
+                        <img src="36.svg" alt="Halaman 36" class="page-svg">
+                    </div>
+                    <div class="page-number">36</div>
+                </div>
+                
+                <!-- Halaman 37 -->
+                <div class="page" id="page37" role="article" aria-label="Halaman 37">
+                    <div class="page-content">
+                        <img src="37.svg" alt="Halaman 37" class="page-svg">
+                    </div>
+                    <div class="page-number">37</div>
+                </div>
+                
+                <!-- Halaman 38 -->
+                <div class="page" id="page38" role="article" aria-label="Halaman 38">
+                    <div class="page-content">
+                        <img src="38.svg" alt="Halaman 38" class="page-svg">
+                    </div>
+                    <div class="page-number">38</div>
+                </div>
+                
+                <!-- Halaman 39 -->
+                <div class="page" id="page39" role="article" aria-label="Halaman 39">
+                    <div class="page-content">
+                        <img src="39.svg" alt="Halaman 39" class="page-svg">
+                    </div>
+                    <div class="page-number">39</div>
+                </div>
+                
+                <!-- Halaman 40 -->
+                <div class="page" id="page40" role="article" aria-label="Halaman 40">
+                    <div class="page-content">
+                        <img src="40.svg" alt="Halaman 40" class="page-svg">
+                    </div>
+                    <div class="page-number">40</div>
+                </div>
+                
+                <!-- Halaman 41 -->
+                <div class="page" id="page41" role="article" aria-label="Halaman 41">
+                    <div class="page-content">
+                        <img src="41.svg" alt="Halaman 41" class="page-svg">
+                    </div>
+                    <div class="page-number">41</div>
+                </div>
+                
+                <!-- Halaman 42 -->
+                <div class="page" id="page42" role="article" aria-label="Halaman 42">
+                    <div class="page-content">
+                        <img src="42.svg" alt="Halaman 42" class="page-svg">
+                    </div>
+                    <div class="page-number">42</div>
+                </div>
+                
+                <!-- Halaman 43 -->
+                <div class="page" id="page43" role="article" aria-label="Halaman 43">
+                    <div class="page-content">
+                        <img src="43.svg" alt="Halaman 43" class="page-svg">
+                    </div>
+                    <div class="page-number">43</div>
+                </div>
+                <!-- Halaman 44 -->
+                <div class="page" id="page44" role="article" aria-label="Halaman 44">
+                    <div class="page-content">
+                        <img src="44.svg" alt="Halaman 44" class="page-svg">
+                    </div>
+                    <div class="page-number">44</div>
+                </div>
+                <!-- Halaman 45 -->
+                <div class="page" id="page45" role="article" aria-label="Halaman 45">
+                    <div class="page-content">
+                        <img src="45.svg" alt="Halaman 45" class="page-svg">
+                    </div>
+                    <div class="page-number">45</div>
+                </div>
+                <!-- Halaman 46 -->
+                <div class="page" id="page46" role="article" aria-label="Halaman 46">
+                    <div class="page-content">
+                        <img src="46.svg" alt="Halaman 46" class="page-svg">
+                    </div>
+                    <div class="page-number">46</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="page-indicators" id="page-indicators" role="tablist" aria-label="Navigasi Halaman"></div>
+            
+            <button id="fullscreenBtn" aria-label="Layar Penuh">
+                <span id="fullscreenIcon">⛶</span> Layar Penuh
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const flipbook = document.getElementById('flipbook');
+            const flipbookContainer = document.getElementById('flipbook-container');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const zoomInBtn = document.getElementById('zoomInBtn');
+            const zoomOutBtn = document.getElementById('zoomOutBtn');
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            const pageIndicatorsContainer = document.getElementById('page-indicators');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const orientationLock = document.getElementById('orientation-lock');
+            const pages = document.querySelectorAll('.page');
+            
+            let currentPage = 0;
+            const totalPages = pages.length;
+            let isZoomed = false;
+            let isFullscreen = false;
+            let isDragging = false;
+            let startX, startY, scrollLeft, scrollTop;
+            let zoomLevel = 1;
+            let imagesLoaded = 0;
+            let totalImages = 0;
+
+            // Set z-index for pages
+            pages.forEach((page, index) => {
+                page.style.zIndex = totalPages - index;
+            });
+
+            createPageIndicators();
+            setupImageLoading();
+            checkOrientation();
+
+            function nextPage() {
+                if (currentPage < totalPages - 1) {
+                    pages[currentPage].classList.add('flipping');
+                    currentPage++;
+                    updateUI();
+                }
+            }
+            
+            function prevPage() {
+                if (currentPage > 0) {
+                    currentPage--;
+                    pages[currentPage].classList.remove('flipping');
+                    updateUI();
+                }
+            }
+
+            function goToPage(pageIndex) {
+                if (pageIndex === currentPage) return;
+
+                if (pageIndex > currentPage) {
+                    for (let i = currentPage; i < pageIndex; i++) {
+                        pages[i].classList.add('flipping');
+                    }
+                } else {
+                    for (let i = currentPage - 1; i >= pageIndex; i--) {
+                        pages[i].classList.remove('flipping');
+                    }
+                }
+                currentPage = pageIndex;
+                updateUI();
+            }
+            
+            function updateUI() {
+                prevBtn.style.display = currentPage === 0 ? 'none' : 'flex';
+                nextBtn.style.display = currentPage === totalPages - 1 ? 'none' : 'flex';
+                
+                updateIndicators();
+            }
+
+            function createPageIndicators() {
+                for (let i = 0; i < totalPages; i++) {
+                    const indicator = document.createElement('span');
+                    indicator.classList.add('indicator');
+                    indicator.setAttribute('role', 'tab');
+                    indicator.setAttribute('aria-label', `Buka halaman ${i + 1}`);
+                    indicator.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+                    if (i === 0) indicator.classList.add('active');
+                    indicator.addEventListener('click', () => goToPage(i));
+                    pageIndicatorsContainer.appendChild(indicator);
+                }
+            }
+
+            function updateIndicators() {
+                const indicators = document.querySelectorAll('.indicator');
+                indicators.forEach((indicator, index) => {
+                    indicator.classList.toggle('active', index === currentPage);
+                    indicator.setAttribute('aria-selected', index === currentPage ? 'true' : 'false');
+                });
+            }
+
+            function setupImageLoading() {
+                // Hitung total gambar
+                const allImages = document.querySelectorAll('.page-svg');
+                totalImages = allImages.length;
+                
+                if (totalImages === 0) {
+                    // Jika tidak ada gambar, sembunyikan loading
+                    hideLoadingOverlay();
+                    return;
+                }
+                
+                // Setup event listener untuk setiap gambar
+                allImages.forEach(img => {
+                    // Jika gambar sudah dimuat
+                    if (img.complete) {
+                        imagesLoaded++;
+                        checkAllImagesLoaded();
+                    } else {
+                        // Tambahkan event listener untuk load dan error
+                        img.addEventListener('load', () => {
+                            imagesLoaded++;
+                            checkAllImagesLoaded();
+                        });
+                        
+                        img.addEventListener('error', () => {
+                            imagesLoaded++;
+                            checkAllImagesLoaded();
+                        });
+                    }
+                });
+                
+                // Fallback: sembunyikan loading setelah 3 detik
+                setTimeout(() => {
+                    if (loadingOverlay.style.display !== 'none') {
+                        hideLoadingOverlay();
+                    }
+                }, 3000);
+            }
+
+            function checkAllImagesLoaded() {
+                if (imagesLoaded >= totalImages) {
+                    hideLoadingOverlay();
+                }
+            }
+
+            function hideLoadingOverlay() {
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 300);
+            }
+
+            function checkOrientation() {
+                // Deteksi orientasi perangkat
+                if (window.innerWidth < 768) {
+                    if (window.innerHeight > window.innerWidth) {
+                        // Mode potret
+                        orientationLock.classList.add('active');
+                    } else {
+                        // Mode lanskap
+                        orientationLock.classList.remove('active');
+                    }
+                } else {
+                    // Layar desktop, selalu tampilkan
+                    orientationLock.classList.remove('active');
+                }
+            }
+
+            // --- Fitur Zoom & Pan ---
+
+            function zoomIn() {
+                if (zoomLevel < 2) {
+                    zoomLevel += 0.25;
+                    flipbookContainer.style.transform = `scale(${zoomLevel})`;
+                    isZoomed = true;
+                }
+            }
+
+            function zoomOut() {
+                if (zoomLevel > 1) {
+                    zoomLevel -= 0.25;
+                    flipbookContainer.style.transform = `scale(${zoomLevel})`;
+                    if (zoomLevel === 1) {
+                        isZoomed = false;
+                        flipbookContainer.scrollLeft = 0;
+                        flipbookContainer.scrollTop = 0;
+                    }
+                }
+            }
+
+            function handlePanStart(e) {
+                if (!isZoomed) return;
+                isDragging = true;
+                startX = e.pageX - flipbookContainer.offsetLeft;
+                startY = e.pageY - flipbookContainer.offsetTop;
+                scrollLeft = flipbookContainer.scrollLeft;
+                scrollTop = flipbookContainer.scrollTop;
+            }
+
+            function handlePanMove(e) {
+                if (!isDragging || !isZoomed) return;
+                e.preventDefault();
+                const x = e.pageX - flipbookContainer.offsetLeft;
+                const y = e.pageY - flipbookContainer.offsetTop;
+                const walkX = (x - startX) * 1.5; // Kecepatan scroll
+                const walkY = (y - startY) * 1.5;
+                flipbookContainer.scrollLeft = scrollLeft - walkX;
+                flipbookContainer.scrollTop = scrollTop - walkY;
+            }
+
+            function handlePanEnd() {
+                isDragging = false;
+            }
+
+            // --- Fitur Layar Penuh ---
+
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().then(() => {
+                        isFullscreen = true;
+                        document.body.classList.add('fullscreen');
+                        fullscreenBtn.innerHTML = '<span>✕</span> Keluar Layar Penuh';
+                    });
+                } else {
+                    document.exitFullscreen().then(() => {
+                        isFullscreen = false;
+                        document.body.classList.remove('fullscreen');
+                        fullscreenBtn.innerHTML = '<span>⛶</span> Layar Penuh';
+                    });
+                }
+            }
+            
+            // --- Event Listeners ---
+
+            // Tombol navigasi
+            nextBtn.addEventListener('click', nextPage);
+            prevBtn.addEventListener('click', prevPage);
+            zoomInBtn.addEventListener('click', zoomIn);
+            zoomOutBtn.addEventListener('click', zoomOut);
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+            // Navigasi Keyboard
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight') nextPage();
+                if (e.key === 'ArrowLeft') prevPage();
+                if (e.key === '+' || e.key === '=') zoomIn();
+                if (e.key === '-' || e.key === '_') zoomOut();
+                if (e.key === 'Escape' && isFullscreen) toggleFullscreen();
+            });
+
+            // Navigasi Sentuh/Swipe
+            let touchStartX = 0;
+            flipbook.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            flipbook.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].screenX;
+                if (touchStartX - touchEndX > 50) nextPage(); // Swipe kiri
+                if (touchEndX - touchStartX > 50) prevPage(); // Swipe kanan
+            }, { passive: true });
+
+            // Event untuk Pan (drag) saat zoom
+            flipbookContainer.addEventListener('mousedown', handlePanStart);
+            flipbookContainer.addEventListener('mouseleave', handlePanEnd);
+            flipbookContainer.addEventListener('mouseup', handlePanEnd);
+            flipbookContainer.addEventListener('mousemove', handlePanMove);
+
+            // Deteksi perubahan orientasi
+            window.addEventListener('orientationchange', () => {
+                setTimeout(checkOrientation, 100);
+            });
+            
+            window.addEventListener('resize', checkOrientation);
+
+            // Inisialisasi status UI awal
+            updateUI();
+        });
+    </script>
+</body>
+</html>
